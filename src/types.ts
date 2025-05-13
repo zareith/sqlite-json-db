@@ -5,15 +5,19 @@ export interface ChangeEvent {
   rowId: string; // position of doc in collection
 }
 
-export type Collection = string;
-export type SQL = string;
 export type Events = {
   change: ChangeEvent;
-  profile: SQL;
+  profile: string;
 };
+
 export type UnSubFn = () => void;
 export type EventType = keyof Events;
 
 export interface JsonStoreValue {
   [key: string]: any;
 }
+
+export type Logger = Record<
+    "debug" | "info" | "warn" | "error",
+    (...args: unknown[]) => void
+>

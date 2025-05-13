@@ -1,2 +1,4 @@
-export { Database } from "./database";
-export type { QueryCriteria, EqQueryCriteria } from "./query";
+export * from "./query.js";
+export * from "./types.js"
+export * from "./collection-ref.js"
+export * from "./doc-ref.js";

@@ -1,56 +1,83 @@
 # sqlite-json-db
 
-sqlite-json-db is an embedded json database (backed by sqlite) with a mongo inspired minimal query api.
+sqlite-json-db is an embedded json database (backed by sqlite) with a mongo inspired minimal query api, and firebase style realtime subscriptions.
 
-# Features
+## Installation:
 
-## 1. Initialize a DB
+For node.js:
 
-Example:
-
-```javascript
-import { Database } from "sqlite-json-db";
-
-// Creates sqlite.db file in the cwd
-const db = new Database();
+```sh
+npm install better-sqlite3 sqlite-json-db
 ```
 
-## 2. Create Collections and Set Documents
+For bun:
 
-Collections are created on first insertion of a document. They are represented by a SQLite Table.
+```sh
+npm install sqlite-json-db # Works with bun's native sqlite driver
+```
 
-```javascript
-// create ref to the doc. Doc ID optional.
+## Usage
 
-const usersRef = db.collection("users").doc("123");
-const refWithoutId = db.collection("users").doc();
+### Import the right adapter for your environment
 
-// Any valid Javascript object that can be parsed to valid JSON can be inserted as a document.
+```js
+// One of:
+import Database from "sqlite-json-db/better-sqlite3"; // For node.js
+import Database from "sqlite-json-db/bun-sqlite"; // For bun
+```
+
+###  Initialize db
+
+```ts
+// Uses in-memory database
+const db = new Database();
+
+// Pass a file path for a persisted databaes:
+const db = new Database("data/sqlite.db");
+```
+
+## Create Collections and Set Documents
+
+Collections are created on first insertion of a document.
+
+```ts
+// Define an interface for the type of record - this must be JSON compatible.
+interface User {
+    name: string
+    age: number
+}
+
+// Now we can define a collection
+const users = db.collection<User>("users");
+// users is the name of the underlying sqlite table
+// which will be created on first access
+
+// We can now create refs to documents
+const usersRef = users.doc("1"); // Id is optional - if omitted, random uuid will be used
 
 await usersRef.set({
-  username: "John Doe",
-  createdAt: "123",
-  updatedAt: "123",
+  name: "John Doe",
+  age: 100
 });
-await refWithoutId.set({ username: "Jane Doe" });
+// Saves the document to db
 ```
 
-## 3. Get a particular document
+### Get a particular document
 
-```javascript
+```ts
 // define ref
-const usersRef = db.collection("users").doc("123");
+const usersRef = db.collection<User>("users").doc("1");
 // get
 const user = await usersRef.get();
 // print
-console.log(user); // prints { username: "John Doe" };
+console.log(user); // prints { name: "John Doe", age: 100 };
 ```
 
-## 4. Update Documents in Collections
+### Update Documents in Collections
 
-```javascript
+```ts
 // ref
-const usersRef = db.collection("users").doc("123");
+const usersRef = db.collection<User>("users").doc("123");
 
 // Properties existing on both old and new object will be updated.
 // Properties only existing on the new object will be added.
@@ -58,16 +85,16 @@ const usersRef = db.collection("users").doc("123");
 // If merge is false, properties only present on the old object will be deleted.
 // Merge is true by default
 
-await ref.set({ username: "DERP Doe", updatedAt: "345" }, { merge: true });
-// document in DB is now { username: "DERP Doe", updatedAt: "345", createdAt: "123" }
+await ref.set({ name: "DERP Doe" }, { merge: true });
+// document in DB is now { name: "DERP Doe", age: 100 }
 
-await ref.set({ username: "DERP Doe", updatedAt: "345" }, { merge: false });
-// document in DB is now { username: "DERP Doe", updatedAt: "345" }
+await ref.set({ name: "DERP Doe" }, { merge: false });
+// document in DB is now { name: "DERP Doe" }
 ```
 
-## 5. Delete Documents in Collection
+### Delete Documents in Collection
 
-```javascript
+```ts
 const db = new Database();
 
 const ref = db.collection("users").doc("deletable");
@@ -81,9 +108,9 @@ const doc = await ref.get();
 console.log(doc); // prints null
 ```
 
-## 6. Listen to real-time updates of documents.
+### Listen to real-time updates of documents.
 
-```javascript
+```ts
 // ref to doc
 const ref = db.collection("users").doc("123");
 
@@ -99,9 +126,9 @@ await ref.set({ username: "SHEESH Doe", updatedAt: 2 });
 unsub();
 ```
 
-## 7. Query Documents in a collection by equality comparison
+### Query Documents in a collection by equality comparison
 
-```javascript
+```ts
 const usersRef = db.collection("users");
 
 await usersRef.doc().set({
@@ -124,7 +151,7 @@ console.log(user.username); // prints `zareith`
 
 Besides `$eq` for equality, we can use `$gt`, `$gte`, `$lt`, `$lte`:
 
-```javascript
+```ts
 usersRef.where({
     username: {
         $eq: "zareith",
@@ -150,7 +177,7 @@ usersRef.where({
 // Finds all documents where username == "zareith" OR updatedAt > 200
 ````
 
-For the common case of find by exact match, whereEq is available as a convenience: 
+For the common case of find by exact match, whereEq is available as a convenience:
 
 ```js
 usersRef.whereEq({ username: "zareith" }).get();
@@ -162,3 +189,11 @@ Equivalent to:
 usersRef.where({ username: { $eq: "zareith" }}).get();
 ```
 
+### License
+
+MIT
+
+### Credits/Inspirations
+
+This library is heavily inspired by doculite by Stefan Bielmeier, and the initial test suite
+and API structure were borrowed from there.

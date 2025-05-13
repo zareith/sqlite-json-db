@@ -1,5 +1,5 @@
-import type { CollectionRef } from "./collection-ref";
-import { ChangeEvent, JsonStoreValue } from "./types";
+import type { CollectionRef } from "./collection-ref.js";
+import { ChangeEvent, JsonStoreValue } from "./types.js";
 
 type SetOptions = {
   merge: boolean;
@@ -9,7 +9,7 @@ export class DocRef<TRecord extends object> {
   constructor(
     private collection: CollectionRef<TRecord>,
     private docId: string
-  ) { 
+  ) {
   }
 
   private get db() {
@@ -42,7 +42,7 @@ export class DocRef<TRecord extends object> {
       VALUES (?, ?)
       ON CONFLICT (id)
       DO UPDATE SET value = ${options.merge ? 'json_patch(value, excluded.value)' : 'excluded.value'}
-    `, 
+    `,
       this.docId,
       JSON.stringify({
         ...record,

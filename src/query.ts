@@ -1,5 +1,5 @@
-import { Database } from "./database";
-import { ChangeEvent, Collection } from "./types";
+import { Base } from "./database/base.js";
+import { ChangeEvent } from "./types.js";
 
 export type BaseQueryCriteria<TRecord extends object> = {
     [K in keyof TRecord]?: {
@@ -51,8 +51,8 @@ export const getCompositeOp = (criteria: any) => {
 export class Query<TRecord extends object> {
 
     constructor(
-        private db: Database,
-        private collection: Collection,
+        private db: Base,
+        private collection: string,
         private criteria: QueryCriteria<any>,
     ) { }
 
@@ -101,7 +101,7 @@ export class Query<TRecord extends object> {
                             clauses.push(`false`);
                             continue;
                         }
-                        let clause = `json_extract(value, "$.${key}") IN (`;
+                        let clause = `json_extract(value, '$.${key}') IN (`;
                         for (let i = 0; i < param.length; i++) {
                             clause += '?';
                             if (i < param.length - 1) clause += ', ';
@@ -112,7 +112,7 @@ export class Query<TRecord extends object> {
                         continue;
                     }
                     const sqlOp = this.getOperator(op)
-                    clauses.push(`json_extract(value, "$.${key}") ${sqlOp} ?`);
+                    clauses.push(`json_extract(value, '$.${key}') ${sqlOp} ?`);
                     params.push(param);
                 }
             }
