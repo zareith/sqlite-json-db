@@ -1,28 +1,32 @@
 {
     "name": "sqlite-json-db",
     "version": "1.0.4",
+    "type": "module",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
+    "exports": {
+        ".": "./dist/index.js",
+        "./node-better-sqlite3": "./dist/node-better-sqlite3",
+        "./better-sqlite3": "./dist/node-better-sqlite3",
+        "./bun-sqlite": "./dist/bun-sqlite"
+    },
     "scripts": {
         "build": "tsc",
         "prepublishOnly": "pnpm run build",
-        "test": "tsx test/index.ts"
+        "test:node": "tsx test/node-sqlite3.test.ts",
+        "test:bun": "bun test test/bun-sqlite.test.ts",
+        "test": "pnpm run test:node && pnpm run test:bun"
     },
     "files": [
         "/dist"
     ],
     "repository": "https://github.com/zareith/sqlite-json-db.git",
     "license": "MIT",
-    "dependencies": {
-        "sqlite": "^5.1.1",
-        "sqlite3": "^5.1.7"
-    },
-    "peerDependencies": {
-        "sqlite": "^5.0.1",
-        "sqlite3": "^5.1.6"
-    },
     "devDependencies": {
+        "@types/better-sqlite3": "^7.6.13",
+        "@types/bun": "^1.2.13",
         "@types/node": "^22.15.17",
+        "better-sqlite3": "^11.10.0",
         "tsx": "^4.19.4"
     }
 }

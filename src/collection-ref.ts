@@ -1,12 +1,12 @@
 import { randomUUID } from "crypto";
-import { Database } from "./database";
-import { DocRef } from "./doc-ref";
-import { EqQueryCriteria, Query, QueryCriteria } from "./query";
+import { DocRef } from "./doc-ref.js";
+import { EqQueryCriteria, Query, QueryCriteria } from "./query.js";
+import { Base } from "./database/base.js";
 
 export class CollectionRef<TRecord extends object> {
 
     constructor(
-        public db: Database,
+        public db: Base,
         public name: string
     ) {
         if (name.includes('"') || name.includes("'")) {
