@@ -1,0 +1,28 @@
+{
+    "name": "sqlite-json-db",
+    "version": "1.0.4",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsc",
+        "prepublishOnly": "pnpm run build",
+        "test": "tsx test/index.ts"
+    },
+    "files": [
+        "/dist"
+    ],
+    "repository": "https://github.com/zareith/sqlite-json-db.git",
+    "license": "MIT",
+    "dependencies": {
+        "sqlite": "^5.1.1",
+        "sqlite3": "^5.1.7"
+    },
+    "peerDependencies": {
+        "sqlite": "^5.0.1",
+        "sqlite3": "^5.1.6"
+    },
+    "devDependencies": {
+        "@types/node": "^22.15.17",
+        "tsx": "^4.19.4"
+    }
+}
