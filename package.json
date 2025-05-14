@@ -5,10 +5,22 @@
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
     "exports": {
-        ".": "./dist/index.js",
-        "./node-better-sqlite3": "./dist/node-better-sqlite3",
-        "./better-sqlite3": "./dist/node-better-sqlite3",
-        "./bun-sqlite": "./dist/bun-sqlite"
+        ".": {
+            "default": "./dist/index.js",
+            "types": "./dist/index.d.ts"
+        },
+        "./node-better-sqlite3": {
+            "default": "./dist/database/node-better-sqlite3.js",
+            "types": "./dist/database/node-better-sqlite3.d.ts"
+        },
+        "./better-sqlite3": {
+            "default": "./dist/database/node-better-sqlite3.js",
+            "types": "./dist/database/node-better-sqlite3.d.ts"
+        },
+        "./bun-sqlite": {
+            "default": "./dist/database/bun-sqlite.js",
+            "types": "./dist/database/bun-sqlite.d.ts"
+        }
     },
     "scripts": {
         "build": "tsc",
