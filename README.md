@@ -2,6 +2,10 @@
 
 sqlite-json-db is an embedded json database (backed by sqlite) with a mongo inspired minimal query api, and firebase style realtime subscriptions.
 
+## Status: 
+
+:warning: Beta (Some APIs subject to change)
+
 ## Installation:
 
 For node.js:
