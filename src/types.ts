@@ -2,7 +2,7 @@ export interface ChangeEvent {
   eventType: string; //"insert"
   database: string; // "main"
   table: string; // "wishlists"
-  rowId: string; // position of doc in collection
+  rowId: number; // position of doc in collection
 }
 
 export type Events = {

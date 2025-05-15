@@ -44,6 +44,7 @@ export class DocRef<TRecord extends object> {
             `SELECT rowid FROM "${this.collection.name}" WHERE id = ?`,
             this.docId
         );
+
         return rows[0]?.rowid ?? null;
     }
 
