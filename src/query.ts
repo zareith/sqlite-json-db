@@ -56,7 +56,22 @@ export class Query<TRecord extends object> {
         private criteria: QueryCriteria<any>,
     ) { }
 
-    public async get() {
+    public get then() {
+        const promise = this.get();
+        return promise.then.bind(promise);
+    }
+
+    public get catch() {
+        const promise = this.get();
+        return promise.catch.bind(promise);
+    }
+
+    public get finally() {
+        const promise = this.get();
+        return promise.finally.bind(promise);
+    }
+
+    public async get(): Promise<TRecord[]> {
         const { sql, params } = this.getQueryClause(this.criteria);
         const selectQuery = `SELECT * FROM ${this.collection} WHERE ${sql}`;
         return this.db.query(selectQuery, ...params)
