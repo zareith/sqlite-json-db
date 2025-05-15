@@ -2,7 +2,7 @@
 
 sqlite-json-db is an embedded json database (backed by sqlite) with a mongo inspired minimal query api, and firebase style realtime subscriptions.
 
-## Status: 
+## Status:
 
 :warning: Beta (Some APIs subject to change)
 
@@ -59,11 +59,12 @@ const users = db.collection<User>("users");
 // We can now create refs to documents
 const usersRef = users.doc("1"); // Id is optional - if omitted, random uuid will be used
 
-await usersRef.set({
+await usersRef.put({
   name: "John Doe",
   age: 100
 });
 // Saves the document to db
+
 ```
 
 ### Get a particular document
@@ -83,17 +84,14 @@ console.log(user); // prints { name: "John Doe", age: 100 };
 // ref
 const usersRef = db.collection<User>("users").doc("123");
 
-// Properties existing on both old and new object will be updated.
-// Properties only existing on the new object will be added.
-
-// If merge is false, properties only present on the old object will be deleted.
-// Merge is true by default
-
-await ref.set({ name: "DERP Doe" }, { merge: true });
+// Insert/Replace the complete document
+await ref.put({ name: "DERP Doe", age: 100 });
 // document in DB is now { name: "DERP Doe", age: 100 }
 
-await ref.set({ name: "DERP Doe" }, { merge: false });
+// Selectively update specific properties
+await ref.update({ name: "DERP Doe" });
 // document in DB is now { name: "DERP Doe" }
+// This will not do anything if the doc is not already present
 ```
 
 ### Delete Documents in Collection
@@ -103,7 +101,7 @@ const db = new Database();
 
 const ref = db.collection("users").doc("deletable");
 
-await ref.set({ username: "deletableUsername", updatedAt: 123123 });
+await ref.put({ username: "deletableUsername", updatedAt: 123123 });
 
 await ref.delete();
 
@@ -123,7 +121,7 @@ const unsub = ref.onSnapshot((doc) => {
   console.log("Omg the user doc is updating!", doc?.username);
 });
 
-await ref.set({ username: "SHEESH Doe", updatedAt: 2 });
+await ref.put({ username: "SHEESH Doe", updatedAt: 2 });
 // prints: `Omg the user doc is updating! SHEESH Doe`
 
 // unsub
@@ -135,7 +133,7 @@ unsub();
 ```ts
 const usersRef = db.collection("users");
 
-await usersRef.doc().set({
+await usersRef.doc().put({
     username: "zareith",
     updatedAt: 234
 });
