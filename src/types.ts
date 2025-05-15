@@ -21,3 +21,6 @@ export type Logger = Record<
     "debug" | "info" | "warn" | "error",
     (...args: unknown[]) => void
 >
+
+export type WithOptional<T extends object, K extends keyof any> =
+    Omit<T, K> & Partial<Pick<T, K & keyof T>>
