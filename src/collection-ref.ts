@@ -5,6 +5,8 @@ import { Base } from "./database/base.js";
 
 export class CollectionRef<TRecord extends object> {
 
+    private exists = false;
+
     constructor(
         public db: Base,
         public name: string
@@ -15,12 +17,14 @@ export class CollectionRef<TRecord extends object> {
     }
 
     async ensureExists() {
+        if (this.exists) return;
         await this.db.run(`
             CREATE TABLE IF NOT EXISTS "${this.name}" (
                 value TEXT,
                 id TEXT NOT NULL PRIMARY KEY
             );
         `);
+        this.exists = true;
     }
 
     async delete() {
@@ -37,11 +41,11 @@ export class CollectionRef<TRecord extends object> {
 
     where(criteria: QueryCriteria<TRecord>) {
         // Create a Query object and return it
-        return new Query<TRecord>(this.db, this.name, criteria);
+        return new Query<TRecord>(this, criteria);
     }
 
     whereEq(criteria: EqQueryCriteria<TRecord>) {
-        return new Query<TRecord>(this.db, this.name, this.expandEqCriteria(criteria));
+        return new Query<TRecord>(this, this.expandEqCriteria(criteria));
     }
 
     private expandEqCriteria(criteria: EqQueryCriteria<TRecord>) {
