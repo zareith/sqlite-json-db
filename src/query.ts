@@ -77,7 +77,7 @@ export class Query<TRecord extends object> {
 
     public async get(): Promise<TRecord[]> {
         const { sql, params } = this.getQueryClause(this.criteria);
-        const selectQuery = `SELECT * FROM ${this.collection.name} WHERE ${sql}`;
+        const selectQuery = `SELECT * FROM "${this.collection.name}" WHERE ${sql}`;
         await this.collection.ensureExists();
         return this.db.query(selectQuery, ...params)
     }
