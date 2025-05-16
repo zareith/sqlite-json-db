@@ -1,3 +1,4 @@
+import { CollectionRef } from "./collection-ref.js";
 import { Base } from "./database/base.js";
 import { ChangeEvent } from "./types.js";
 
@@ -51,10 +52,13 @@ export const getCompositeOp = (criteria: any) => {
 export class Query<TRecord extends object> {
 
     constructor(
-        private db: Base,
-        private collection: string,
+        private collection: CollectionRef<TRecord>,
         private criteria: QueryCriteria<any>,
     ) { }
+
+    private get db() {
+        return this.collection.db;
+    }
 
     public get then() {
         const promise = this.get();
@@ -73,13 +77,14 @@ export class Query<TRecord extends object> {
 
     public async get(): Promise<TRecord[]> {
         const { sql, params } = this.getQueryClause(this.criteria);
-        const selectQuery = `SELECT * FROM ${this.collection} WHERE ${sql}`;
+        const selectQuery = `SELECT * FROM ${this.collection.name} WHERE ${sql}`;
+        await this.collection.ensureExists();
         return this.db.query(selectQuery, ...params)
     }
 
     public onSnapshot(onNext: (docs: TRecord[] | undefined) => void) {
         return this.db.listen("change", (args: ChangeEvent) => {
-            if (args.table == this.collection) {
+            if (args.table == this.collection.name) {
                 this.get().then(onNext);
             }
         });
