@@ -82,12 +82,6 @@ export class Query<TRecord extends object> {
         return this.db.query(selectQuery, ...params)
     }
 
-    public async all(): Promise<TRecord[]> {
-        const selectQuery = `SELECT * FROM "${this.collection.name}"`;
-        await this.collection.ensureExists();
-        return this.db.query(selectQuery)
-    }
-
     public onSnapshot(onNext: (docs: TRecord[] | undefined) => void) {
         return this.db.listen("change", (args: ChangeEvent) => {
             if (args.table == this.collection.name) {
