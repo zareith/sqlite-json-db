@@ -48,6 +48,12 @@ export class CollectionRef<TRecord extends object> {
         return new Query<TRecord>(this, this.expandEqCriteria(criteria));
     }
 
+    async all(): Promise<TRecord[]> {
+        const selectQuery = `SELECT * FROM "${this.name}"`;
+        await this.ensureExists();
+        return this.db.query(selectQuery)
+    }
+
     private expandEqCriteria(criteria: EqQueryCriteria<TRecord>) {
         return Object.fromEntries(Object.entries(criteria).map(([key, val]) => [key, { $eq: val }])) as QueryCriteria<TRecord>
     }
