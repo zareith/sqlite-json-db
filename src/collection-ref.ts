@@ -35,23 +35,28 @@ export class CollectionRef<TRecord extends object> {
         await this.delete();
     }
 
+    async count(): Promise<number> {
+        await this.ensureExists();
+        const rows = await this.db.rawQuery(`SELECT count(*) as count FROM "${this.name}"`);
+        return rows[0].count ?? 0;
+    }
+
     doc(docId?: string) {
         return new DocRef<TRecord>(this, docId || randomUUID());
     }
 
-    where(criteria: QueryCriteria<TRecord>) {
-        // Create a Query object and return it
-        return new Query<TRecord>(this, criteria);
+    where(query?: QueryCriteria<TRecord>) {
+        return new Query<TRecord>(this, { query });
     }
 
-    whereEq(criteria: EqQueryCriteria<TRecord>) {
-        return new Query<TRecord>(this, this.expandEqCriteria(criteria));
+    whereEq(query: EqQueryCriteria<TRecord>) {
+        return new Query<TRecord>(this, {
+            query: query ? this.expandEqCriteria(query) : undefined
+        });
     }
 
     async all(): Promise<TRecord[]> {
-        const selectQuery = `SELECT * FROM "${this.name}"`;
-        await this.ensureExists();
-        return this.db.query(selectQuery)
+        return this.where().get();
     }
 
     private expandEqCriteria(criteria: EqQueryCriteria<TRecord>) {
