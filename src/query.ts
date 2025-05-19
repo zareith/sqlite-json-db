@@ -34,6 +34,9 @@ export type EqQueryCriteria<TRecord extends object> =
     | BaseEqQueryCriteria<TRecord>
     | CompositeEqQueryCriteria<TRecord>
 
+export type SortCriteria<TRecord extends object> =
+    { [K in keyof TRecord]?: "ASC" | "DESC" }
+
 export const getCompositeOp = (criteria: any) => {
     const keys = Object.keys(criteria);
     if (keys.includes("$and")) {
@@ -50,44 +53,116 @@ export const getCompositeOp = (criteria: any) => {
 }
 
 export class Query<TRecord extends object> {
-
     constructor(
         private collection: CollectionRef<TRecord>,
-        private criteria: QueryCriteria<any>,
+        private opts?: {
+            query?: QueryCriteria<any>,
+            limit?: number
+            skip?: number
+            sort?: SortCriteria<TRecord>
+        }
     ) { }
 
     private get db() {
         return this.collection.db;
     }
 
-    public get then() {
+    get then() {
         const promise = this.get();
         return promise.then.bind(promise);
     }
 
-    public get catch() {
+    get catch() {
         const promise = this.get();
         return promise.catch.bind(promise);
     }
 
-    public get finally() {
+    get finally() {
         const promise = this.get();
         return promise.finally.bind(promise);
     }
 
-    public async get(): Promise<TRecord[]> {
-        const { sql, params } = this.getQueryClause(this.criteria);
-        const selectQuery = `SELECT * FROM "${this.collection.name}" WHERE ${sql}`;
+    skip(skip: number | undefined) {
+        return new Query<TRecord>(this.collection, {
+            ...this.opts,
+            skip
+        });
+    }
+
+    offset(skip: number) {
+        return this.skip(skip);
+    }
+
+    limit(limit: number) {
+        return new Query<TRecord>(this.collection, {
+            ...this.opts,
+            limit
+        })
+    }
+
+    sort(sort: SortCriteria<TRecord>) {
+        return new Query<TRecord>(this.collection, {
+            ...this.opts,
+            sort
+        })
+    }
+
+    orderBy(criteria: SortCriteria<TRecord>) {
+        return this.sort(criteria);
+    }
+
+    async count(): Promise<number> {
+        let params: any[] = [];
+        let selectQuery = `SELECT count(*) as count FROM "${this.collection.name}"`;
+        if (this.opts?.query) {
+            const qc = this.getQueryClause(this.opts.query);
+            selectQuery += ` WHERE ${qc.sql}`;
+            params = qc.params;
+        }
+        await this.collection.ensureExists();
+        const rows = await this.db.rawQuery(selectQuery, ...params)
+        console.log("Count:", rows, selectQuery)
+        return rows[0]?.count ?? 0
+    }
+
+    async get(): Promise<TRecord[]> {
+        const params: any[] = [];
+        let selectQuery = `SELECT * FROM "${this.collection.name}"`;
+        if (this.opts?.query) {
+            const qc = this.getQueryClause(this.opts.query);
+            selectQuery += ` WHERE ${qc.sql}`;
+            params.push(...qc.params)
+        }
+        if (this.opts?.sort) {
+            selectQuery += ` ORDER BY ${this.getSortClause(this.opts.sort)}`
+        }
+        if (this.opts?.limit) {
+            selectQuery += ` LIMIT ?`
+            params.push(this.opts.limit)
+        }
+        if (this.opts?.skip) {
+            if (!this.opts?.limit) {
+                selectQuery += ` LIMIT -1`
+            }
+            selectQuery += ` OFFSET ?`
+            params.push(this.opts.skip)
+        }
         await this.collection.ensureExists();
         return this.db.query(selectQuery, ...params)
     }
 
-    public onSnapshot(onNext: (docs: TRecord[] | undefined) => void) {
+    onSnapshot(onNext: (docs: TRecord[] | undefined) => void) {
         return this.db.listen("change", (args: ChangeEvent) => {
             if (args.table == this.collection.name) {
                 this.get().then(onNext);
             }
         });
+    }
+
+    private getSortClause(criteria: SortCriteria<TRecord>) {
+        return Object.entries(criteria)
+            .map(([key, dir]) => `json_extract(value, '$.${key}') ${dir}`)
+            .join(", ")
     }
 
     private getQueryClause(criteria: QueryCriteria<any>) {
