@@ -1,9 +1,5 @@
 import type { CollectionRef } from "./collection-ref.js";
-import { ChangeEvent, JsonStoreValue, WithOptional } from "./types.js";
-
-type SetOptions = {
-    merge: boolean;
-};
+import { ChangeEvent, WithOptional } from "./types.js";
 
 export class DocRef<TRecord extends object> {
     constructor(
@@ -88,7 +84,7 @@ export class DocRef<TRecord extends object> {
             WHERE id = ?`, this.docId);
     }
 
-    public onSnapshot(onNext: (snapshot: JsonStoreValue | null) => void) {
+    public onSnapshot(onNext: (snapshot: TRecord | null) => void) {
         return this.db.listen("change", (args: ChangeEvent) => {
             this.getRowId().then((rowId) => {
                 if (args.table == this.collection.name && args.rowId == rowId) {

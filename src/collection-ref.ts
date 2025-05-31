@@ -1,7 +1,7 @@
 import { randomUUID } from "crypto";
 import { DocRef } from "./doc-ref.js";
 import { EqQueryCriteria, Query, QueryCriteria } from "./query.js";
-import { Base } from "./database/base.js";
+import { Base, ChangeEvent } from "./database/base.js";
 
 export class CollectionRef<TRecord extends object> {
 
@@ -45,6 +45,13 @@ export class CollectionRef<TRecord extends object> {
         return new DocRef<TRecord>(this, docId || randomUUID());
     }
 
+	async docByRowId(rowId: number): Promise<TRecord | null> {
+		return (await this.db.query(
+			`SELECT value FROM "${this.name}" WHERE rowid = ?`,
+			rowId
+		))[0]
+	}
+
     where(query?: QueryCriteria<TRecord>) {
         return new Query<TRecord>(this, { query });
     }
@@ -61,5 +68,11 @@ export class CollectionRef<TRecord extends object> {
 
     private expandEqCriteria(criteria: EqQueryCriteria<TRecord>) {
         return Object.fromEntries(Object.entries(criteria).map(([key, val]) => [key, { $eq: val }])) as QueryCriteria<TRecord>
+    }
+
+    public onSnapshot(onNext: (snapshot: TRecord | null) => void) {
+        return this.db.listen("change", (args: ChangeEvent) => {
+			this.docByRowId(args.rowId).then(onNext)
+        });
     }
 }

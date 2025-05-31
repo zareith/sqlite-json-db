@@ -1,11 +1,20 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Base } from "../src/database/base";
+import { NestedKeyOf } from "typesafe-object-paths";
 
 interface User {
     name: string
     age: number
+    addresses?: {
+        houseNo: number
+        city: string
+        country: string
+        zipCode: string
+    }[]
 }
+
+type K = NestedKeyOf<User>
 
 export function Suite(Database: { new(): Base }) {
     describe("Query", () => {
@@ -30,6 +39,8 @@ export function Suite(Database: { new(): Base }) {
             const query5 = usersRef.where({ age: { $lte: 10 } })
             const docs5 = await query5.get();
             assert.deepEqual(docs5.map(_ => _.age), [10])
+
+            const query6 = usersRef.where({ "addresses.city": { $eq: "Vns" }  })
         });
 
         it("supports compact form for query by equality", async () => {
