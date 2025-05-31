@@ -1,16 +1,16 @@
 import { CollectionRef } from "./collection-ref.js";
-import { Base } from "./database/base.js";
+import type { NestedKeyOf, PathOf } from "typesafe-object-paths"
 import { ChangeEvent } from "./types.js";
 
 export type BaseQueryCriteria<TRecord extends object> = {
-    [K in keyof TRecord]?: {
-        $eq?: TRecord[K],
-        $neq?: TRecord[K],
-        $lt?: TRecord[K],
-        $gt?: TRecord[K],
-        $lte?: TRecord[K],
-        $gte?: TRecord[K],
-        $in?: TRecord[K][]
+    [K in NestedKeyOf<TRecord>]?: {
+        $eq?: PathOf<TRecord, K>,
+        $neq?: PathOf<TRecord, K>,
+        $lt?: PathOf<TRecord, K>,
+        $gt?: PathOf<TRecord, K>,
+        $lte?: PathOf<TRecord, K>,
+        $gte?: PathOf<TRecord, K>,
+        $in?: PathOf<TRecord, K>[]
     }
 }
 
@@ -121,7 +121,6 @@ export class Query<TRecord extends object> {
         }
         await this.collection.ensureExists();
         const rows = await this.db.rawQuery(selectQuery, ...params)
-        console.log("Count:", rows, selectQuery)
         return rows[0]?.count ?? 0
     }
 
@@ -150,6 +149,18 @@ export class Query<TRecord extends object> {
         await this.collection.ensureExists();
         return this.db.query(selectQuery, ...params)
     }
+
+	async update(record: Partial<TRecord>) {
+		await this.collection.ensureExists();
+		let sql = `UPDATE "${this.collection.name}" SET value = json_patch(value, ?)`
+		const params = [record];
+		if (this.opts?.query) {
+			const qc = this.getQueryClause(this.opts.query);
+			sql += ` WHERE ${qc}`;
+			params.push(...qc.params);
+		}
+		await this.db.run(sql, params);
+	}
 
     onSnapshot(onNext: (docs: TRecord[] | undefined) => void) {
         return this.db.listen("change", (args: ChangeEvent) => {
@@ -206,7 +217,10 @@ export class Query<TRecord extends object> {
                         clauses.push(clause);
                         continue;
                     }
-                    const sqlOp = this.getOperator(op)
+                    const sqlOp = JsonOpToSqlOpM[op]
+                    if (!sqlOp) {
+                        throw new Error(`Invalid operator encountered ${op}`)
+                    }
                     clauses.push(`json_extract(value, '$.${key}') ${sqlOp} ?`);
                     params.push(param);
                 }
@@ -216,16 +230,14 @@ export class Query<TRecord extends object> {
         return { sql: `false`, params: [] };
     }
 
-    private getOperator(op: string) {
-        switch (op) {
-            case "$eq": return "==";
-            case "$neq": return "<>";
-            case "$lt": return "<";
-            case "$lte": return "<=";
-            case "$gt": return ">";
-            case "$gte": return ">=";
-        }
-        throw new Error("Unsupported operator " + op)
-    }
-
 }
+
+const JsonOpToSqlOpM: Dict<string> = {
+    "$eq": "==",
+    "$neq": "<>",
+    "$lt": "<",
+    "$lte": "<=",
+    "$gt": ">",
+    "$gte": ">=",
+}
+
