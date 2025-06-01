@@ -140,6 +140,21 @@ export function Suite(Database: { new(): Base }) {
                 .get()
             assert.deepEqual(r3.map(_ => _.name), ["B", "A", "C"])
         })
+
+        it("supports raw sql", async () => {
+            const db = new Database();
+            const users = db.collection<User>("users");
+            await users.doc().put({ name: "A", age: 15 });
+            await users.doc().put({ name: "B", age: 10 })
+            await users.doc().put({ name: "C", age: 20 })
+            const r1 = await users.whereRaw`value ->> 'name' = ${"A"}`.get()
+            assert(r1.length === 1);
+            assert(r1[0].name === "A");
+            const r2 = await users.whereRaw`value ->> 'name' = ${"A"} or value ->> 'age' = ${10}`.get()
+            assert(r2.length === 2);
+            assert(r2[0].name === "A");
+            assert(r2[1].name === "B");
+        })
     });
 
     describe("DocRef", () => {
@@ -191,7 +206,7 @@ export function Suite(Database: { new(): Base }) {
             assert.strictEqual(user?.name, "Johnny Derp");
             assert.strictEqual(user?.age, 123123);
         });
-        it("should be able to update the docc", async () => {
+        it("should be able to update the doc", async () => {
             const db = new Database();
             const usersRef = db.collection<{ lit: boolean }>("users").doc("derp");
             await usersRef.put({ lit: true });
@@ -199,6 +214,24 @@ export function Suite(Database: { new(): Base }) {
             const user = await usersRef.get();
             assert.strictEqual(user!.lit, false);
         });
+        it("supports updating by raw sql", async () => {
+            const db = new Database();
+            const users = db.collection<User>("users")
+            const userRef = users.doc("1");
+            await userRef.put({
+                name: "Johnny Derp",
+                age: 123123,
+            });
+            const addr = {
+                houseNo: 1,
+                city: "TVC",
+                country: "US",
+                zipCode: "111"
+            }
+            await users.doc("1").updateRaw`json_set(value, '$.address', json(${JSON.stringify(addr)}))`
+            const retrieved = await userRef.get();
+            assert.deepEqual(retrieved?.address, addr);
+        })
     });
 
     describe("CollectionRef", () => {

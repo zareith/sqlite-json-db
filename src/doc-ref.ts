@@ -1,4 +1,5 @@
 import type { CollectionRef } from "./collection-ref.js";
+import { joinQuery } from "./query.js";
 import { ChangeEvent, WithOptional } from "./types.js";
 
 export class DocRef<TRecord extends object> {
@@ -12,41 +13,37 @@ export class DocRef<TRecord extends object> {
         return this.collection.db;
     }
 
-    public async get(): Promise<TRecord | null> {
+    async get(): Promise<TRecord | null> {
         await this.collection.ensureExists();
         const records = await this.db.query(`SELECT value FROM "${this.collection.name}" WHERE id = ?`, this.docId);
         return records[0] ?? null;
     }
 
-    public get then() {
+    get then() {
         const promise = this.get();
         return promise.then.bind(promise);
     }
 
-    public get catch() {
+    get catch() {
         const promise = this.get();
         return promise.catch.bind(promise);
     }
 
-    public get finally() {
+    get finally() {
         const promise = this.get();
         return promise.finally.bind(promise);
     }
 
-
-    public async getRowId(): Promise<number | null> {
+    async getRowId(): Promise<number | null> {
         await this.collection.ensureExists();
         const rows = await this.db.rawQuery(
             `SELECT rowid FROM "${this.collection.name}" WHERE id = ?`,
             this.docId
         );
-
         return rows[0]?.rowid ?? null;
     }
 
-    public async put(
-        record: WithOptional<TRecord, "id">
-    ) {
+    async put(record: WithOptional<TRecord, "id">) {
         await this.collection.ensureExists();
         if ("id" in record && record.id) this.docId = `${record.id}`;
         await this.db.run(`
@@ -62,7 +59,7 @@ export class DocRef<TRecord extends object> {
         )
     }
 
-    public async update(record: Partial<TRecord>) {
+    async update(record: Partial<TRecord>) {
         await this.collection.ensureExists();
         if ("id" in record && record.id) this.docId = `${record.id}`;
         await this.db.run(`
@@ -77,14 +74,29 @@ export class DocRef<TRecord extends object> {
         )
     }
 
-    public async delete() {
+    async updateRaw(update: string | TemplateStringsArray, ...params: any[]) {
+        await this.collection.ensureExists();
+        const q = joinQuery({
+            parts: typeof update === "string" ? [update] : update,
+            params
+        });
+        q.params.push(this.docId);
+        await this.db.run(`
+            UPDATE "${this.collection.name}"
+            SET value = ${q.sql}
+            WHERE id = ?`,
+            ...q.params
+        )
+    }
+
+    async delete() {
         await this.collection.ensureExists();
         await this.db.run(`
             DELETE FROM "${this.collection.name}"
             WHERE id = ?`, this.docId);
     }
 
-    public onSnapshot(onNext: (snapshot: TRecord | null) => void) {
+    onSnapshot(onNext: (snapshot: TRecord | null) => void) {
         return this.db.listen("change", (args: ChangeEvent) => {
             this.getRowId().then((rowId) => {
                 if (args.table == this.collection.name && args.rowId == rowId) {
