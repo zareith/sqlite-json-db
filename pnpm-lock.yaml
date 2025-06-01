@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      typesafe-object-paths:
-        specifier: ^1.4.0
-        version: 1.4.0
     devDependencies:
       '@types/better-sqlite3':
         specifier: ^7.6.13
@@ -335,9 +331,6 @@ packages:
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
 
-  typesafe-object-paths@1.4.0:
-    resolution: {integrity: sha512-he5JC5ak+zjzDOsoDoRwBb2Dgue6kZlj18cV58B46BTU15QVCWTT2hXb/1cAqf+ABFi4N5yNRmU/YEqCcgh5pA==}
-
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
@@ -619,8 +612,6 @@ snapshots:
   tunnel-agent@0.6.0:
     dependencies:
       safe-buffer: 5.2.1
-
-  typesafe-object-paths@1.4.0: {}
 
   undici-types@6.21.0: {}
 
