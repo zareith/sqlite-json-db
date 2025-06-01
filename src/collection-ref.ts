@@ -56,6 +56,15 @@ export class CollectionRef<TRecord extends object> {
         return new Query<TRecord>(this, { query });
     }
 
+    whereRaw(parts: string | TemplateStringsArray, ...params: any[]) {
+        return new Query<TRecord>(this, {
+            rawQuery: {
+                parts: typeof parts === "string" ? [parts] : parts,
+                params,
+            }
+        })
+    }
+
     whereEq(query: EqQueryCriteria<TRecord>) {
         return new Query<TRecord>(this, {
             query: query ? this.expandEqCriteria(query) : undefined

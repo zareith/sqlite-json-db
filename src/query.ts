@@ -55,11 +55,17 @@ export const getCompositeOp = (criteria: any) => {
     return null;
 }
 
+interface QueryParts {
+    parts: readonly string[],
+    params: readonly any[]
+}
+
 export class Query<TRecord extends object> {
     constructor(
         private collection: CollectionRef<TRecord>,
         private opts?: {
             query?: QueryCriteria<any>,
+            rawQuery?: QueryParts
             limit?: number
             skip?: number
             sort?: SortCriteria<TRecord>
@@ -117,21 +123,21 @@ export class Query<TRecord extends object> {
     async count(): Promise<number> {
         let params: any[] = [];
         let selectQuery = `SELECT count(*) as count FROM "${this.collection.name}"`;
-        if (this.opts?.query) {
-            const qc = this.getQueryClause(this.opts.query);
+        const qc = this.getQueryClause()
+        if (qc) {
             selectQuery += ` WHERE ${qc.sql}`;
             params = qc.params;
         }
         await this.collection.ensureExists();
-        const rows = await this.db.rawQuery(selectQuery, ...params)
+        const rows = await this.db.rawQuery(selectQuery, ...params);
         return rows[0]?.count ?? 0
     }
 
     async get(): Promise<TRecord[]> {
         const params: any[] = [];
         let selectQuery = `SELECT * FROM "${this.collection.name}"`;
-        if (this.opts?.query) {
-            const qc = this.getQueryClause(this.opts.query);
+        const qc = this.getQueryClause();
+        if (qc) {
             selectQuery += ` WHERE ${qc.sql}`;
             params.push(...qc.params)
         }
@@ -153,17 +159,32 @@ export class Query<TRecord extends object> {
         return this.db.query(selectQuery, ...params)
     }
 
-	async update(record: Partial<TRecord>) {
-		await this.collection.ensureExists();
-		let sql = `UPDATE "${this.collection.name}" SET value = json_patch(value, ?)`
-		const params = [record];
-		if (this.opts?.query) {
-			const qc = this.getQueryClause(this.opts.query);
-			sql += ` WHERE ${qc}`;
-			params.push(...qc.params);
-		}
-		await this.db.run(sql, params);
-	}
+    async update(record: Partial<TRecord>) {
+        await this.collection.ensureExists();
+        let sql = `UPDATE "${this.collection.name}" SET value = json_patch(value, ?)`
+        const params = [record];
+        const qc = this.getQueryClause();
+        if (qc) {
+            sql += ` WHERE ${qc}`;
+            params.push(...qc.params);
+        }
+        await this.db.run(sql, params);
+    }
+
+    async updateRaw(update: string | TemplateStringsArray, ...params: any[]) {
+        await this.collection.ensureExists();
+        const q = joinQuery({
+            parts: typeof update === "string" ? [update] : update,
+            params
+        });
+        let sql = `UPDATE "${this.collection.name}"  SET value = ${q.sql}`;
+        const qc = this.getQueryClause();
+        if (qc) {
+            sql += ` WHERE ${qc}`;
+            q.params.push(...qc.params);
+        }
+        await this.db.run(sql, q.params);
+    }
 
     onSnapshot(onNext: (docs: TRecord[] | undefined) => void) {
         return this.db.listen("change", (args: ChangeEvent) => {
@@ -179,10 +200,20 @@ export class Query<TRecord extends object> {
             .join(", ")
     }
 
-    private getQueryClause(criteria: QueryCriteria<any>) {
+    private getQueryClause() {
+        if (this.opts?.query) {
+            return this.buildQueryClause(this.opts.query)
+        }
+        if (this.opts?.rawQuery) {
+            return joinQuery(this.opts.rawQuery);
+        }
+        return null;
+    }
+
+    private buildQueryClause(criteria: QueryCriteria<any>) {
         const compositeOp = getCompositeOp(criteria);
         const subConds = compositeOp
-            ? (criteria as any)[compositeOp]?.map((subCriteria: QueryCriteria<any>) => this.getQueryClause(subCriteria)) ?? []
+            ? (criteria as any)[compositeOp]?.map((subCriteria: QueryCriteria<any>) => this.buildQueryClause(subCriteria)) ?? []
             : null;
         if (compositeOp && subConds?.length) {
             const sqlOp = compositeOp === "$and" ? "AND" : "OR";
@@ -242,4 +273,26 @@ const JsonOpToSqlOpM: Dict<string> = {
     "$lte": "<=",
     "$gt": ">",
     "$gte": ">=",
+}
+
+export const joinQuery = (q: QueryParts) => {
+    const params: any[] = [];
+    let sql = "";
+    for (let i = 0; i < q.parts.length; i++) {
+        const part = q.parts[i];
+        if (i < q.parts.length - 1) {
+            if (part.at(-1) === "$") {
+                // Enable raw interpolation
+                sql += part.slice(0, -1);
+                sql += q.params[i];
+            } else {
+                sql += part;
+                sql += ' ? '
+                params.push(q.params[i]);
+            }
+        } else {
+            sql += part;
+        }
+    }
+    return { sql, params }
 }
