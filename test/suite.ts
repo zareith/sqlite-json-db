@@ -1,27 +1,33 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Base } from "../src/database/base";
-import { NestedKeyOf } from "typesafe-object-paths";
 
 interface User {
     name: string
     age: number
-    addresses?: {
+    address?: {
         houseNo: number
         city: string
         country: string
         zipCode: string
-    }[]
+    }
 }
-
-type K = NestedKeyOf<User>
 
 export function Suite(Database: { new(): Base }) {
     describe("Query", () => {
         it("supports filtering by different operators", async () => {
             const db = new Database();
             const usersRef = db.collection<User>("app_users");
-            await usersRef.doc().put({ name: "A", age: 10 });
+            await usersRef.doc().put({
+                name: "A",
+                age: 10,
+                address: {
+                    houseNo: 100,
+                    city: "TVS",
+                    country: "US",
+                    zipCode: "111111"
+                }
+            });
             await usersRef.doc().put({ name: "B", age: 20 });
             await usersRef.doc().put({ name: "C", age: 30 });
             const query1 = usersRef.where({ name: { $eq: "A" } });
@@ -40,7 +46,12 @@ export function Suite(Database: { new(): Base }) {
             const docs5 = await query5.get();
             assert.deepEqual(docs5.map(_ => _.age), [10])
 
-            const query6 = usersRef.where({ "addresses.city": { $eq: "Vns" }  })
+            const query6 = usersRef.where({
+                "address.city": { $eq: "TVS" },
+                "address.country": { $eq: "US" }
+            })
+            const docs6 = await query6.get();
+            assert.deepEqual(docs6[0].name, "A")
         });
 
         it("supports compact form for query by equality", async () => {
@@ -134,20 +145,20 @@ export function Suite(Database: { new(): Base }) {
     describe("DocRef", () => {
         it("notifies subscriber of changes in doc", async () => {
             const db = new Database();
-            const usersRef = db.collection("users").doc("123");
-            await usersRef.put({ username: "John Doe", updatedAt: 123123 });
-            const ref = db.collection("users").doc("123");
+            const usersRef = db.collection<User>("users").doc("123");
+            await usersRef.put({ name: "John Doe", age: 123123 });
+            const ref = db.collection<User>("users").doc("123");
             const unsub = ref.onSnapshot((doc) => {
                 console.log("Omg the user doc is updating!", doc);
-                assert.strictEqual(doc?.username, "JANE Doe");
+                assert.strictEqual(doc?.name, "JANE Doe");
             });
-            await ref.put({ username: "JANE Doe", updatedAt: 1 });
+            await ref.put({ name: "JANE Doe", age: 1 });
             unsub();
         });
         it("allows crud operations", async () => {
             const db = new Database();
-            const ref = db.collection("users").doc("deletable");
-            await ref.put({ username: "John Doe", updatedAt: 123123 });
+            const ref = db.collection<User>("users").doc("deletable");
+            await ref.put({ name: "John Doe", age: 123 });
             await ref.delete();
             const doc = await ref.get();
             assert.strictEqual(doc, null);

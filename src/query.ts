@@ -1,18 +1,21 @@
 import { CollectionRef } from "./collection-ref.js";
-import type { NestedKeyOf, PathOf } from "typesafe-object-paths"
 import { ChangeEvent } from "./types.js";
 
-export type BaseQueryCriteria<TRecord extends object> = {
-    [K in NestedKeyOf<TRecord>]?: {
-        $eq?: PathOf<TRecord, K>,
-        $neq?: PathOf<TRecord, K>,
-        $lt?: PathOf<TRecord, K>,
-        $gt?: PathOf<TRecord, K>,
-        $lte?: PathOf<TRecord, K>,
-        $gte?: PathOf<TRecord, K>,
-        $in?: PathOf<TRecord, K>[]
-    }
+export type StrKey<K> = keyof K & string;
+
+export interface CompQCriteria<TVal> {
+    $eq?: TVal,
+    $neq?: TVal,
+    $lt?: TVal,
+    $gt?: TVal,
+    $lte?: TVal,
+    $gte?: TVal,
+    $in?: TVal[]
 }
+
+export type BaseQueryCriteria<TRecord extends object> = {
+    [K in StrKey<TRecord>]?: CompQCriteria<TRecord[K]>
+} | Dict<CompQCriteria<any>>
 
 export type CompositeQueryCriteria<TRecord extends object> =
     | { $and: QueryCriteria<TRecord>[] }
@@ -240,4 +243,3 @@ const JsonOpToSqlOpM: Dict<string> = {
     "$gt": ">",
     "$gte": ">=",
 }
-
