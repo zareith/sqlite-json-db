@@ -16,9 +16,9 @@ export class CollectionRef<TRecord extends object> {
         }
     }
 
-    async ensureExists() {
+    ensureExists() {
         if (this.exists) return;
-        await this.db.run(`
+        this.db.run(`
             CREATE TABLE IF NOT EXISTS "${this.name}" (
                 value TEXT,
                 id TEXT NOT NULL PRIMARY KEY
@@ -27,17 +27,17 @@ export class CollectionRef<TRecord extends object> {
         this.exists = true;
     }
 
-    async delete() {
-        await this.db.run(`DROP TABLE IF EXISTS "${this.name}"`);
+    delete() {
+        this.db.run(`DROP TABLE IF EXISTS "${this.name}"`);
     }
 
-    async drop() {
-        await this.delete();
+    drop() {
+        this.delete();
     }
 
-    async count(): Promise<number> {
-        await this.ensureExists();
-        const rows = await this.db.rawQuery(`SELECT count(*) as count FROM "${this.name}"`);
+    count(): Promise<number> {
+        this.ensureExists();
+        const rows = this.db.rawQuery(`SELECT count(*) as count FROM "${this.name}"`);
         return rows[0].count ?? 0;
     }
 
@@ -46,10 +46,10 @@ export class CollectionRef<TRecord extends object> {
     }
 
 	async docByRowId(rowId: number): Promise<TRecord | null> {
-		return (await this.db.query(
+		return this.db.query(
 			`SELECT value FROM "${this.name}" WHERE rowid = ?`,
 			rowId
-		))[0]
+		)[0]
 	}
 
     where(query?: QueryCriteria<TRecord>) {
@@ -71,7 +71,7 @@ export class CollectionRef<TRecord extends object> {
         });
     }
 
-    async all(): Promise<TRecord[]> {
+    all(): TRecord[] {
         return this.where().get();
     }
 

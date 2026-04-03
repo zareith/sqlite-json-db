@@ -38,7 +38,7 @@ export abstract class Base {
         return new CollectionRef<TRecord>(this, collectionName);
     }
 
-    abstract rawQuery(query: string, ...params: any[]): Promise<any[]>
-    abstract query(query: string, ...params: any[]): Promise<any[]>
-    abstract run(query: string, ...params: any[]): Promise<void>
+    abstract rawQuery(query: string, ...params: any[]): any[]
+    abstract query(query: string, ...params: any[]): any[]
+    abstract run(query: string, ...params: any[]): void
 }

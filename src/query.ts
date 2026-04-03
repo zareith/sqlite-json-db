@@ -76,21 +76,6 @@ export class Query<TRecord extends object> {
         return this.collection.db;
     }
 
-    get then() {
-        const promise = this.get();
-        return promise.then.bind(promise);
-    }
-
-    get catch() {
-        const promise = this.get();
-        return promise.catch.bind(promise);
-    }
-
-    get finally() {
-        const promise = this.get();
-        return promise.finally.bind(promise);
-    }
-
     skip(skip: number | undefined) {
         return new Query<TRecord>(this.collection, {
             ...this.opts,
@@ -120,7 +105,7 @@ export class Query<TRecord extends object> {
         return this.sort(criteria);
     }
 
-    async count(): Promise<number> {
+    count(): number {
         let params: any[] = [];
         let selectQuery = `SELECT count(*) as count FROM "${this.collection.name}"`;
         const qc = this.getQueryClause()
@@ -128,12 +113,12 @@ export class Query<TRecord extends object> {
             selectQuery += ` WHERE ${qc.sql}`;
             params = qc.params;
         }
-        await this.collection.ensureExists();
-        const rows = await this.db.rawQuery(selectQuery, ...params);
+        this.collection.ensureExists();
+        const rows = this.db.rawQuery(selectQuery, ...params);
         return rows[0]?.count ?? 0
     }
 
-    async get(): Promise<TRecord[]> {
+    get(): TRecord[] {
         const params: any[] = [];
         let selectQuery = `SELECT * FROM "${this.collection.name}"`;
         const qc = this.getQueryClause();
@@ -155,12 +140,12 @@ export class Query<TRecord extends object> {
             selectQuery += ` OFFSET ?`
             params.push(this.opts.skip)
         }
-        await this.collection.ensureExists();
+        this.collection.ensureExists();
         return this.db.query(selectQuery, ...params)
     }
 
-    async update(record: Partial<TRecord>) {
-        await this.collection.ensureExists();
+    update(record: Partial<TRecord>) {
+        this.collection.ensureExists();
         let sql = `UPDATE "${this.collection.name}" SET value = json_patch(value, ?)`
         const params = [record];
         const qc = this.getQueryClause();
@@ -168,11 +153,11 @@ export class Query<TRecord extends object> {
             sql += ` WHERE ${qc}`;
             params.push(...qc.params);
         }
-        await this.db.run(sql, params);
+        this.db.run(sql, params);
     }
 
-    async updateRaw(update: string | TemplateStringsArray, ...params: any[]) {
-        await this.collection.ensureExists();
+    updateRaw(update: string | TemplateStringsArray, ...params: any[]) {
+        this.collection.ensureExists();
         const q = joinQuery({
             parts: typeof update === "string" ? [update] : update,
             params
@@ -183,13 +168,13 @@ export class Query<TRecord extends object> {
             sql += ` WHERE ${qc}`;
             q.params.push(...qc.params);
         }
-        await this.db.run(sql, q.params);
+        this.db.run(sql, q.params);
     }
 
     onSnapshot(onNext: (docs: TRecord[] | undefined) => void) {
         return this.db.listen("change", (args: ChangeEvent) => {
             if (args.table == this.collection.name) {
-                this.get().then(onNext);
+                onNext(this.get());
             }
         });
     }
