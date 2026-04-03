@@ -17,7 +17,7 @@ npm install better-sqlite3 sqlite-json-db
 For bun:
 
 ```sh
-npm install sqlite-json-db # Works with bun's native sqlite driver
+bun install sqlite-json-db # Works with bun's native sqlite driver
 ```
 
 ## Usage
