@@ -248,6 +248,8 @@ export function Suite(Database: { new(): Base }) {
             assert.strictEqual(users.count(), 1);
             users.doc("2").put({ name: "Ron", age: 11 })
             assert.strictEqual(users.count(), 2);
+			users.where({ name: { $eq: "Harry" }}).delete();
+            assert.strictEqual(users.count(), 1);
         })
     })
 

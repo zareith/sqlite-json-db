@@ -59,7 +59,7 @@ const users = db.collection<User>("users");
 // We can now create refs to documents
 const usersRef = users.doc("1"); // Id is optional - if omitted, random uuid will be used
 
-await usersRef.put({
+usersRef.put({
   name: "John Doe",
   age: 100
 });
@@ -73,7 +73,7 @@ await usersRef.put({
 // define ref
 const usersRef = db.collection<User>("users").doc("1");
 // get
-const user = await usersRef.get();
+const user = usersRef.get();
 // print
 console.log(user); // prints { name: "John Doe", age: 100 };
 ```
@@ -85,11 +85,11 @@ console.log(user); // prints { name: "John Doe", age: 100 };
 const usersRef = db.collection<User>("users").doc("123");
 
 // Insert/Replace the complete document
-await ref.put({ name: "DERP Doe", age: 100 });
+ref.put({ name: "DERP Doe", age: 100 });
 // document in DB is now { name: "DERP Doe", age: 100 }
 
 // Selectively update specific properties
-await ref.update({ name: "DERP Doe" });
+ref.update({ name: "DERP Doe" });
 // document in DB is now { name: "DERP Doe" }
 // This will not do anything if the doc is not already present
 ```
@@ -101,11 +101,11 @@ const db = new Database();
 
 const ref = db.collection("users").doc("deletable");
 
-await ref.put({ username: "deletableUsername", updatedAt: 123123 });
+ref.put({ username: "deletableUsername", updatedAt: 123123 });
 
-await ref.delete();
+ref.delete();
 
-const doc = await ref.get();
+const doc = ref.get();
 
 console.log(doc); // prints null
 ```
@@ -121,7 +121,7 @@ const unsub = ref.onSnapshot((doc) => {
   console.log("Omg the user doc is updating!", doc?.username);
 });
 
-await ref.put({ username: "SHEESH Doe", updatedAt: 2 });
+ref.put({ username: "SHEESH Doe", updatedAt: 2 });
 // prints: `Omg the user doc is updating! SHEESH Doe`
 
 // unsub
@@ -133,7 +133,7 @@ unsub();
 ```ts
 const usersRef = db.collection("users");
 
-await usersRef.doc().put({
+usersRef.doc().put({
     username: "zareith",
     updatedAt: 234
 });
@@ -144,7 +144,7 @@ const query = usersRef.where({
     }
 });
 
-const docs = await query.get();
+const docs = query.get();
 
 const user = docs[0];
 

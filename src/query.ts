@@ -144,6 +144,18 @@ export class Query<TRecord extends object> {
         return this.db.query(selectQuery, ...params)
     }
 
+	delete() {
+        this.collection.ensureExists();
+        const params: any[] = [];
+        let query = `DELETE FROM "${this.collection.name}"`;
+        const qc = this.getQueryClause();
+        if (qc) {
+            query += ` WHERE ${qc.sql}`;
+            params.push(...qc.params)
+        }
+        this.db.run(query, ...params)
+	}
+
     update(record: Partial<TRecord>) {
         this.collection.ensureExists();
         let sql = `UPDATE "${this.collection.name}" SET value = json_patch(value, ?)`
