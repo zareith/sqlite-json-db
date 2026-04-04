@@ -29,19 +29,8 @@ export class DocRef<TRecord extends object> {
 	}
 
 	put(record: WithOptional<TRecord, "id">) {
-		this.collection.ensureExists();
 		if ("id" in record && record.id) this.docId = `${record.id}`;
-		this.db.run(`
-            INSERT INTO "${this.collection.name}" (id, value)
-            VALUES (?, ?)
-            ON CONFLICT (id)
-            DO UPDATE SET value = excluded.value`,
-			this.docId,
-			JSON.stringify({
-				...record,
-				id: this.docId
-			})
-		)
+		this.collection.put(this.docId, record)
 	}
 
 	update(record: Partial<TRecord>) {

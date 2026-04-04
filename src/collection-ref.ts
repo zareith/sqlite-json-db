@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { DocRef } from "./doc-ref.js";
 import { EqQueryCriteria, Query, QueryCriteria } from "./query.js";
 import { Base, ChangeEvent } from "./database/base.js";
+import {WithOptional} from "./types.js";
 
 export class CollectionRef<TRecord extends object> {
 
@@ -27,12 +28,8 @@ export class CollectionRef<TRecord extends object> {
         this.exists = true;
     }
 
-    delete() {
-        this.db.run(`DROP TABLE IF EXISTS "${this.name}"`);
-    }
-
     drop() {
-        this.delete();
+        this.db.run(`DROP TABLE IF EXISTS "${this.name}"`);
     }
 
     count(): Promise<number> {
@@ -43,6 +40,36 @@ export class CollectionRef<TRecord extends object> {
 
     doc(docId?: string) {
         return new DocRef<TRecord>(this, docId || randomUUID());
+    }
+
+	put(docId: string | undefined | null, record: WithOptional<TRecord, "id">) {
+		this.ensureExists();
+		docId ??= randomUUID();
+		this.db.run(`
+            INSERT INTO "${this.name}" (id, value)
+            VALUES (?, ?)
+            ON CONFLICT (id)
+            DO UPDATE SET value = excluded.value`,
+			docId,
+			JSON.stringify({
+				...record,
+				id: docId
+			})
+		)
+	}
+
+	putAll(records: TRecord[]) {
+		for (const record of records) {
+			this.put(undefined, record);
+		}
+	}
+
+    deleteAll(docIds: string[]) {
+		if (!docIds.length) return;
+		const placeholders = docIds.map(_ => '?').join(", ");
+        this.db.run(`
+            DELETE FROM "${this.name}" WHERE id in (${placeholders});
+        `, ...docIds);
     }
 
 	async docByRowId(rowId: number): Promise<TRecord | null> {
