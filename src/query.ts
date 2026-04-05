@@ -256,6 +256,7 @@ export class Query<TRecord extends object> {
                     params.push(param);
                 }
             }
+			if (!clauses.length) clauses.push(`true`);
             return { sql: clauses.join(" AND "), params }
         }
         return { sql: `false`, params: [] };
