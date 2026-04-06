@@ -162,10 +162,10 @@ export class Query<TRecord extends object> {
         const params = [record];
         const qc = this.getQueryClause();
         if (qc) {
-            sql += ` WHERE ${qc}`;
+            sql += ` WHERE ${qc.sql}`;
             params.push(...qc.params);
         }
-        this.db.run(sql, params);
+        this.db.run(sql, ...params);
     }
 
     updateRaw(update: string | TemplateStringsArray, ...params: any[]) {
@@ -177,10 +177,10 @@ export class Query<TRecord extends object> {
         let sql = `UPDATE "${this.collection.name}"  SET value = ${q.sql}`;
         const qc = this.getQueryClause();
         if (qc) {
-            sql += ` WHERE ${qc}`;
+            sql += ` WHERE ${qc.sql}`;
             q.params.push(...qc.params);
         }
-        this.db.run(sql, q.params);
+        this.db.run(sql, ...q.params);
     }
 
     onSnapshot(onNext: (docs: TRecord[] | undefined) => void) {
