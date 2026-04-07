@@ -159,7 +159,7 @@ export class Query<TRecord extends object> {
     update(record: Partial<TRecord>) {
         this.collection.ensureExists();
         let sql = `UPDATE "${this.collection.name}" SET value = json_patch(value, ?)`
-        const params = [record];
+        const params = [JSON.stringify(record)];
         const qc = this.getQueryClause();
         if (qc) {
             sql += ` WHERE ${qc.sql}`;
